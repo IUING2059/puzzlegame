@@ -1,13 +1,19 @@
 package com.itheima.ui;
 
 import javax.crypto.interfaces.PBEKey;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
 import javax.swing.*;
 import javax.swing.border.BevelBorder;
+import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.io.File;
 import java.util.Random;
+import java.awt.event.ActionListener;
 
-public class GameJFrame extends JFrame implements KeyListener {
+public class GameJFrame extends JFrame implements KeyListener, ActionListener {
 
     //创建二维数组，保存图片的位置
     int[][] data = new int[4][4];
@@ -15,14 +21,33 @@ public class GameJFrame extends JFrame implements KeyListener {
     int x = 0;
     int y = 0;
 
-    //记录图片路径
-    String pathAll = "image/girl/girl3/";
+    //表示第几个 图片
+    int numPicture=1;
+    //表示哪个部分大类
+    String pathType = "girl";
+
+
 
     //定义一个二维数组，存储正确的数据
     int[][] win = {{1, 2, 3, 4},
             {5, 6, 7, 8},
             {9, 10, 11, 12},
             {13, 14, 15, 0}};
+
+    //定义变量，统计步数
+    int step = 0;
+
+    //创建选项下面的条目对象
+    JMenuItem replayJMenuItem = new JMenuItem("重新游戏");
+    JMenuItem reloginJMenuItem = new JMenuItem("重新登陆");
+    JMenuItem closeJMenuItem = new JMenuItem("关闭游戏");
+
+    JMenuItem accountJMenuItem = new JMenuItem("公众号");
+
+    //添加更换图片下面的内容
+    JMenuItem girlJMenuItem = new JMenuItem("美女");
+    JMenuItem animalJMenuItem = new JMenuItem("动物");
+    JMenuItem sportsJMenuItem = new JMenuItem("运动");
 
     //GameJFrame为游戏的主界面
     public GameJFrame() {
@@ -45,6 +70,25 @@ public class GameJFrame extends JFrame implements KeyListener {
     }
 
 
+    //胜利音效
+    // 胜利音效播放方法
+    private void playVictorySound() {
+        try {
+            // 1. 获取音效文件路径（和win.png同目录）
+            File soundFile = new File("win.wav");
+            // 2. 获取音频输入流
+            AudioInputStream audioStream = AudioSystem.getAudioInputStream(soundFile);
+            // 3. 获取音频剪辑对象
+            Clip clip = AudioSystem.getClip();
+            // 4. 打开音频流
+            clip.open(audioStream);
+            // 5. 开始播放
+            clip.start();
+        } catch (Exception e) {
+            // 音效加载失败不影响游戏，打印错误即可
+            System.out.println("胜利音效播放失败：" + e.getMessage());
+        }
+    }
     //初始化数据（打乱数据）
     private void initDate() {
         //打乱数据
@@ -63,9 +107,9 @@ public class GameJFrame extends JFrame implements KeyListener {
             if (tempArr[i] == 0) {
                 x = i / 4;
                 y = i % 4;
-            } else {
-                data[i / 4][i % 4] = tempArr[i];
             }
+            data[i / 4][i % 4] = tempArr[i];
+
 
         }
 
@@ -76,12 +120,19 @@ public class GameJFrame extends JFrame implements KeyListener {
         //清空原本已经出现的图片
         this.getContentPane().removeAll();
 
-        if (victory()){
+        //记录图片路径
+        String pathAll = "image/"+pathType + "/"+pathType + numPicture + "/";
+
+        if (victory()) {
             //显示胜利界面
-            JLabel  winJLabel=new JLabel((new ImageIcon("image/win.png")));
+            JLabel winJLabel = new JLabel((new ImageIcon("image/win.png")));
             winJLabel.setBounds(203, 283, 197, 73);
             this.getContentPane().add(winJLabel);
         }
+
+        JLabel stepCount = new JLabel("步数：" + step);
+        stepCount.setBounds(50, 30, 100, 20);
+        this.getContentPane().add(stepCount);
 
         for (int i = 0; i <= 3; i++) {
             for (int j = 0; j <= 3; j++) {
@@ -121,23 +172,37 @@ public class GameJFrame extends JFrame implements KeyListener {
         //创建整个菜单对象
         JMenuBar jMenuBar = new JMenuBar();
 
-        //创建菜单上面的两个选项的对象（功能，关于我们）
+        //创建菜单上面的个选项的对象（功能，关于我们）
         JMenu functionJMenu = new JMenu("功能");
         JMenu aboutJMenu = new JMenu("关于我们");
 
-        //创建选项下面的条目对象
-        JMenuItem replayJMenuItem = new JMenuItem("重新游戏");
-        JMenuItem reloginJMenuItem = new JMenuItem("重新登陆");
-        JMenuItem closeJMenuItem = new JMenuItem("关闭游戏");
+        //创建更换图片的选项
+        JMenu changeImageJMenu = new JMenu("更换图片");
+        changeImageJMenu.add(girlJMenuItem);
+        changeImageJMenu.add(sportsJMenuItem);
+        changeImageJMenu.add(animalJMenuItem);
 
-        JMenuItem accountJMenuItem = new JMenuItem("公众号");
 
+        //更换图片部分（新）
+        functionJMenu.add(changeImageJMenu);
         //将每一个选项下面的条目添加到对应选项下面
         functionJMenu.add(replayJMenuItem);
         functionJMenu.add(reloginJMenuItem);
         functionJMenu.add(closeJMenuItem);
 
         aboutJMenu.add(accountJMenuItem);
+
+        //给条目绑定事件
+        replayJMenuItem.addActionListener(this);
+        reloginJMenuItem.addActionListener(this);
+        closeJMenuItem.addActionListener(this);
+        accountJMenuItem.addActionListener(this);
+
+        //新增更换图片功能(新)
+        girlJMenuItem.addActionListener(this);
+        animalJMenuItem.addActionListener(this);
+        sportsJMenuItem.addActionListener(this);
+
 
         //将菜单里面的两个选项添加到菜单栏中
         jMenuBar.add(functionJMenu);
@@ -173,6 +238,8 @@ public class GameJFrame extends JFrame implements KeyListener {
     //按下不松时会调用这个方法
     @Override
     public void keyPressed(KeyEvent e) {
+        //记录图片路径
+        String pathAll = "image/"+pathType + "/"+pathType + numPicture + "/";
         //判断游戏是否胜利，此方法结束，不能执行查看完整图片
         if (victory()) {
             return;
@@ -224,6 +291,8 @@ public class GameJFrame extends JFrame implements KeyListener {
             data[x][y] = data[x][y + 1];
             data[x][y + 1] = 0;
             y++;
+            //每移动一次，计数器加一
+            step++;
             //刷新图片
             initImage();
 
@@ -241,6 +310,8 @@ public class GameJFrame extends JFrame implements KeyListener {
             data[x][y] = data[x + 1][y];
             data[x + 1][y] = 0;
             x++;
+            //每移动一次，计数器加一
+            step++;
             //刷新图片
             initImage();
 
@@ -257,6 +328,8 @@ public class GameJFrame extends JFrame implements KeyListener {
             data[x][y] = data[x][y - 1];
             data[x][y - 1] = 0;
             y--;
+            //每移动一次，计数器加一
+            step++;
             //刷新图片
             initImage();
 
@@ -273,6 +346,8 @@ public class GameJFrame extends JFrame implements KeyListener {
             data[x][y] = data[x - 1][y];
             data[x - 1][y] = 0;
             x--;
+            //每移动一次，计数器加一
+            step++;
             //刷新图片
             initImage();
 
@@ -296,13 +371,91 @@ public class GameJFrame extends JFrame implements KeyListener {
     public boolean victory() {
         for (int i = 0; i < data.length; i++) {
             for (int j = 0; j < data[i].length; j++) {
-                if (data[i][j] != win[i][j]){
+                if (data[i][j] != win[i][j]) {
                     //数组不一致
                     return false;
                 }
             }
         }
+        playVictorySound();
         //数组一致
         return true;
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        //获取当前被点击的条目对象
+        Object obj = e.getSource();
+        //判断
+        if (obj == replayJMenuItem) {
+            System.out.println("重新开始");
+
+            //再次打乱数组
+            initDate();
+            //计数器清零
+            step = 0;
+            //重新加载图片
+            initImage();
+
+
+        } else if (obj == reloginJMenuItem) {
+            System.out.println("重新登录");
+            //返回登陆界面
+            //关闭当前界面
+            this.setVisible(false);
+            //返回登陆界面
+            new LoginJFrame();
+
+
+        } else if (obj == closeJMenuItem) {
+            System.out.println("关闭游戏");
+            //退出程序
+            System.exit(0);
+        } else if (obj == accountJMenuItem) {
+            System.out.println("关于我们");
+
+            //创建一个弹框对象
+            JDialog jDialog = new JDialog();
+            //创建管理图片的容器对象JLabel
+            JLabel jLabel = new JLabel(new ImageIcon("image/abount.png"));
+            //设置图片的坐标和宽高
+            jLabel.setBounds(0, 0, 172, 258);
+            //把图片添加到弹框中
+            jDialog.getContentPane().add(jLabel);
+            //给弹框设置宽高
+            jDialog.setSize(500, 500);
+            //让弹框置顶
+            jDialog.setAlwaysOnTop(true);
+            //让弹框居中
+            jDialog.setLocationRelativeTo(null);
+            //弹框不关闭，主程序继续执行
+            jDialog.setModal(true);
+            //弹框显示出来
+            jDialog.setVisible(true);
+        } else if (obj == girlJMenuItem) {
+            System.out.println("美女");
+            Random random1=new Random();
+            int numTemp1=random1.nextInt(12);
+            numPicture=numTemp1+1;
+            pathType="girl";
+            initImage();
+
+        } else if (obj == animalJMenuItem) {
+            System.out.println("动物");
+            Random random2=new Random();
+            int numTemp1=random2.nextInt(7);
+            numPicture=numTemp1+1;
+            pathType="animal";
+            initImage();
+
+        } else if (obj == sportsJMenuItem) {
+            System.out.println("运动");
+            Random random3=new Random();
+            int numTemp1=random3.nextInt(9);
+            numPicture=numTemp1+1;
+            pathType="sport";
+            initImage();
+
+        }
     }
 }
