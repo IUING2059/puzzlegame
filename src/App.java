@@ -7,13 +7,13 @@ public class App {
         //程序启动入口
 
         //开启一个界面就创建一个对象
-        //new LoginJFrame();
+        new LoginJFrame();
 
 
-        //new RegisterJFrame();
+       //new RegisterJFrame();
 
 
-        new GameJFrame();
+        //new GameJFrame();
 
     }
 }

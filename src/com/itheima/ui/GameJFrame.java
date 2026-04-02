@@ -230,6 +230,9 @@ public class GameJFrame extends JFrame implements KeyListener, ActionListener {
         this.addKeyListener(this);
     }
 
+    //胜利之后，再次点击更换图片，会重新刷新图片
+
+
     @Override
     public void keyTyped(KeyEvent e) {
 
@@ -381,6 +384,8 @@ public class GameJFrame extends JFrame implements KeyListener, ActionListener {
         //数组一致
         return true;
     }
+
+
 
     @Override
     public void actionPerformed(ActionEvent e) {
